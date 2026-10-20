@@ -1,27 +1,28 @@
-# FLRW_kit — FLRW 宇宙の背景量・距離・線形成長・球対称崩壊を計算する C ライブラリ
+# FLRW_kit — a C library for FLRW background, distances, linear growth and spherical collapse
 
-与えられた宇宙論パラメータに対して、宇宙年齢・共形時刻・各種距離・線形成長因子・臨界密度揺らぎ $\delta_c$・ビリアル過密度 $\Delta_{\rm vir}$ を計算する。
-C11 + libm だけで動き、内部状態を持たないので OpenMP の並列領域からそのまま呼べる。
+[日本語](README_ja.md)
 
-## ビルド
+For a given set of cosmological parameters, FLRW_kit computes the cosmic time, conformal time, cosmological distances, the linear growth factor, the critical overdensity $\delta_c$ and the virial overdensity $\Delta_{\rm vir}$.
+It needs only C11 and libm. The library keeps no internal state, so its functions can be called from inside OpenMP parallel regions.
+
+## Build
 
 ```sh
-cd FLRW_kit
-make            # libflrw_kit.a
-make test       # テスト
+make            # builds libflrw_kit.a
+make test       # runs the tests
 ```
 
-利用側では `#include "flrw_kit.h"` して `-L<dir> -lflrw_kit -lm` をリンクする。
+In your code, `#include "flrw_kit.h"` and link with `-L<dir> -lflrw_kit -lm`.
 
-## 宇宙モデル
+## Cosmological model
 
 ```c
 typedef struct cosm_param {
-  double omega_cdm; /* ダークマター */
-  double omega_b;   /* バリオン */
-  double omega_de;  /* ダークエネルギー (宇宙定数) */
+  double omega_cdm; /* dark matter */
+  double omega_b;   /* baryons */
+  double omega_de;  /* dark energy (cosmological constant) */
   double hubble;    /* h  (H0 = 100 h km/s/Mpc) */
-  double omega_nu;  /* ニュートリノ */
+  double omega_nu;  /* neutrinos */
 } cosm_param;
 ```
 
@@ -29,38 +30,38 @@ $$
 E(a)^2 \equiv \left(\frac{H}{H_0}\right)^2 = \Omega_m a^{-3} + \Omega_k a^{-2} + \Omega_\Lambda
 $$
 
-- $\Omega_m = \Omega_{\rm cdm} + \Omega_b + \Omega_\nu$（ニュートリノは非相対論的物質として扱う）
-- $\Omega_\Lambda$ = `omega_de`（$w=-1$）
-- $\Omega_k = 1 - \Omega_m - \Omega_\Lambda$（曲率は自動的に決まる）
-- 放射は含まない。
+- $\Omega_m = \Omega_{\rm cdm} + \Omega_b + \Omega_\nu$ (neutrinos are treated as non-relativistic matter)
+- $\Omega_\Lambda$ = `omega_de` ($w=-1$)
+- $\Omega_k = 1 - \Omega_m - \Omega_\Lambda$ (the curvature follows from the other parameters)
+- Radiation is not included.
 
-## 単位と規約
+## Units and conventions
 
-- 時刻 $t$、共形時刻 $\tau$ は $1/H_0$、距離は $c/H_0$ で規格化（$c=1$ なので $\tau$ と共動距離は同じ単位）。$t,\tau$ はビッグバン（$a=0$）から測る。
-- $h$ は規格化された量には現れない。物理単位への換算に `FLRW_hubble_time_Gyr()`（$1/H_0$ [Gyr]）と `FLRW_hubble_distance_Mpc()`（$c/H_0$ [Mpc]）を使う。
-- 共動距離 $D_C = \int_0^z dz'/E(z')$（視線方向）。角径距離・光度距離は横方向共動距離 $D_M$ を使い $D_A = D_M/(1+z)$、$D_L = (1+z)D_M$。
-  - $D_M = \sinh(\sqrt{\Omega_k}D_C)/\sqrt{\Omega_k}$（$\Omega_k>0$）、$\sin(\sqrt{-\Omega_k}D_C)/\sqrt{-\Omega_k}$（$\Omega_k<0$）
-- `_t`, `_tau` 版の距離は「時刻 $t$（共形時刻 $\tau$）に光を出した天体を現在観測したときの距離」。$D_C = \tau_0 - \tau$。
-- エラー（不正なパラメータ、$z\le -1$、$t\le 0$、到達できない共形時刻など）は NaN を返す。
-- 単調に膨張する宇宙を仮定する（再収縮する閉じた宇宙の収縮期は扱わない）。$z<0$（未来）も膨張が続く範囲で計算できる。
+- Time $t$ and conformal time $\tau$ are in units of $1/H_0$, and distances in units of $c/H_0$. Since $c=1$, $\tau$ and comoving distance share the same unit. $t$ and $\tau$ are measured from the Big Bang ($a=0$).
+- $h$ does not appear in the normalized quantities. To convert to physical units, use `FLRW_hubble_time_Gyr()` ($1/H_0$ in Gyr) and `FLRW_hubble_distance_Mpc()` ($c/H_0$ in Mpc).
+- The comoving distance is the line-of-sight distance $D_C = \int_0^z dz'/E(z')$. The angular diameter and luminosity distances use the transverse comoving distance $D_M$: $D_A = D_M/(1+z)$ and $D_L = (1+z)D_M$.
+  - $D_M = \sinh(\sqrt{\Omega_k}D_C)/\sqrt{\Omega_k}$ for $\Omega_k>0$, and $\sin(\sqrt{-\Omega_k}D_C)/\sqrt{-\Omega_k}$ for $\Omega_k<0$.
+- The `_t` and `_tau` distance functions give the distance today to a source that emitted light at time $t$ (conformal time $\tau$). In particular, $D_C = \tau_0 - \tau$.
+- On error, functions return NaN. Errors include invalid parameters, $z\le -1$, $t\le 0$, and a conformal time that is never reached.
+- The universe is assumed to expand monotonically. The contracting phase of a recollapsing closed universe is not handled. Negative $z$ (the future) is allowed as long as the expansion continues.
 
-## 関数一覧
+## Functions
 
-| 量 | 赤方偏移 $z$ の関数 | 時刻 $t$ の関数 | 共形時刻 $\tau$ の関数 |
+| Quantity | as a function of redshift $z$ | of time $t$ | of conformal time $\tau$ |
 |---|---|---|---|
-| 宇宙年齢 $t$ | `FLRW_cosmic_time_z` | | |
-| 共形時刻 $\tau$ | `FLRW_conformal_time_z` | | |
-| 赤方偏移 | | `FLRW_redshift_t` | `FLRW_redshift_tau` |
-| スケール因子 | | `FLRW_scale_factor_t` | `FLRW_scale_factor_tau` |
-| 共動距離 $D_C$ | `FLRW_DC_z` | `FLRW_DC_t` | `FLRW_DC_tau` |
-| 横方向共動距離 $D_M$ | `FLRW_DM_z` | `FLRW_DM_t` | `FLRW_DM_tau` |
-| 角径距離 $D_A$ | `FLRW_DA_z` | `FLRW_DA_t` | `FLRW_DA_tau` |
-| 光度距離 $D_L$ | `FLRW_DL_z` | `FLRW_DL_t` | `FLRW_DL_tau` |
-| 線形成長因子 $D$（$D(z{=}0)=1$） | `FLRW_growth_factor_z` | `FLRW_growth_factor_t` | `FLRW_growth_factor_tau` |
-| 臨界密度揺らぎ $\delta_c$ | `FLRW_delta_crit_z` | `FLRW_delta_crit_t` | `FLRW_delta_crit_tau` |
-| ビリアル過密度 $\Delta_{\rm vir}$ | `FLRW_virial_Delta_z` | `FLRW_virial_Delta_t` | `FLRW_virial_Delta_tau` |
+| cosmic time $t$ | `FLRW_cosmic_time_z` | | |
+| conformal time $\tau$ | `FLRW_conformal_time_z` | | |
+| redshift | | `FLRW_redshift_t` | `FLRW_redshift_tau` |
+| scale factor | | `FLRW_scale_factor_t` | `FLRW_scale_factor_tau` |
+| comoving distance $D_C$ | `FLRW_DC_z` | `FLRW_DC_t` | `FLRW_DC_tau` |
+| transverse comoving distance $D_M$ | `FLRW_DM_z` | `FLRW_DM_t` | `FLRW_DM_tau` |
+| angular diameter distance $D_A$ | `FLRW_DA_z` | `FLRW_DA_t` | `FLRW_DA_tau` |
+| luminosity distance $D_L$ | `FLRW_DL_z` | `FLRW_DL_t` | `FLRW_DL_tau` |
+| linear growth factor $D$ ($D(z{=}0)=1$) | `FLRW_growth_factor_z` | `FLRW_growth_factor_t` | `FLRW_growth_factor_tau` |
+| critical overdensity $\delta_c$ | `FLRW_delta_crit_z` | `FLRW_delta_crit_t` | `FLRW_delta_crit_tau` |
+| virial overdensity $\Delta_{\rm vir}$ | `FLRW_virial_Delta_z` | `FLRW_virial_Delta_t` | `FLRW_virial_Delta_tau` |
 
-すべて `double f(const cosm_param* cp, double x)` の形。補助関数として `FLRW_omega_m`, `FLRW_omega_k`, `FLRW_hubble_z`（$E(z)$）, `FLRW_omega_m_z`（$\Omega_m(z)$）もある。
+Every function has the form `double f(const cosm_param* cp, double x)`. Helper functions are also provided: `FLRW_omega_m`, `FLRW_omega_k`, `FLRW_hubble_z` ($E(z)$) and `FLRW_omega_m_z` ($\Omega_m(z)$).
 
 ```c
 #include <stdio.h>
@@ -78,67 +79,67 @@ int main(void) {
 }
 ```
 
-## 計算方法
+## Methods
 
-### 時刻・距離
+### Time and distances
 
-$u=\sqrt a$ と変数変換して $a\to0$ の特異性を除き、大域適応型 Gauss–Kronrod（7–15 点、相対精度 $10^{-13}$）で積分する。
+The substitution $u=\sqrt a$ removes the singular behavior at $a\to0$. The integrals are then evaluated by globally adaptive Gauss–Kronrod quadrature (7–15 points, relative accuracy $10^{-13}$).
 
 $$
 t(a) = \int_0^{\sqrt a}\frac{2u^2\,du}{\sqrt{\Omega_m + \Omega_k u^2 + \Omega_\Lambda u^6}},\qquad
 \tau(a) = \int_0^{\sqrt a}\frac{2\,du}{\sqrt{\Omega_m + \Omega_k u^2 + \Omega_\Lambda u^6}}
 $$
 
-$t$、$\tau$ からの逆変換は $\ln a$ についての括弧付き Newton 法（$dt/d\ln a = 1/E$、$d\tau/d\ln a = 1/(aE)$）。
+The inverse maps from $t$ and $\tau$ to $a$ use a bracketed Newton iteration in $\ln a$, with $dt/d\ln a = 1/E$ and $d\tau/d\ln a = 1/(aE)$.
 
-### 線形成長因子
+### Linear growth factor
 
-物質＋宇宙定数＋曲率で厳密な Heath (1977) の積分表示を使う。
+The growth factor uses the integral form of Heath (1977), which is exact for matter + cosmological constant + curvature:
 
 $$
-D_1(a) = \frac{5\Omega_m}{2}E(a)\int_0^a\frac{da'}{[a'E(a')]^3}\quad(a\to0\ \text{で}\ D_1\to a),\qquad
+D_1(a) = \frac{5\Omega_m}{2}E(a)\int_0^a\frac{da'}{[a'E(a')]^3}\quad(D_1\to a\ \text{as}\ a\to0),\qquad
 D(z) = D_1(a)/D_1(1)
 $$
 
-ニュートリノも物質として一緒に成長するとみなしているので、自由流減衰によるスケール依存性は含まない。
+Neutrinos are assumed to cluster together with the rest of the matter. The scale dependence caused by neutrino free streaming is therefore not included.
 
-### 球対称崩壊（$\delta_c$, $\Delta_{\rm vir}$）
+### Spherical collapse ($\delta_c$, $\Delta_{\rm vir}$)
 
-フィッティング公式ではなく、$\Lambda$ と曲率を含むトップハット崩壊を厳密に解く。
-Lagrange 半径を 1 とする単位（$GM=\Omega_m/2$）でシェル半径 $R$ は
+Instead of fitting formulae, FLRW_kit solves top-hat collapse exactly, including $\Lambda$ and curvature.
+In units where the Lagrangian radius is 1 ($GM=\Omega_m/2$), the shell radius $R$ obeys
 
 $$
 \ddot R = -\frac{\Omega_m}{2R^2} + \Omega_\Lambda R,\qquad
 \dot R^2 = \frac{\Omega_m}{R} + \Omega_\Lambda R^2 + K,\quad K = -\frac{\Omega_m}{R_{\rm ta}} - \Omega_\Lambda R_{\rm ta}^2
 $$
 
-背景（$R=a$）では $K=\Omega_k$ なので、揺らぎは「曲率」の差 $\delta K = \Omega_k - K$ で表される。
+For the background ($R=a$), $K=\Omega_k$. The perturbation is therefore described by the "curvature" difference $\delta K = \Omega_k - K$.
 
-1. 成長モードのみ（ビッグバン時刻が背景と同じ）なら、崩壊時刻はターンアラウンド時刻の 2 倍。
+1. For a pure growing mode (the shell's Big Bang time equals the background's), the collapse time is twice the turnaround time:
    $$
    t_{\rm ta}(R_{\rm ta}) = \int_0^{\pi/2}\frac{2R_{\rm ta}^{3/2}\sin^2\theta\,d\theta}{\sqrt{\Omega_m - \Omega_\Lambda R_{\rm ta}^3\sin^2\theta(1+\sin^2\theta)}}
    $$
-   $2t_{\rm ta}(R_{\rm ta}) = t(a_c)$ を Brent 法で解いて $R_{\rm ta}$ を求める（$\Omega_\Lambda>0$ では $R_{\rm ta}^3<\Omega_m/2\Omega_\Lambda$）。
-2. 初期の線形揺らぎは $\delta = \frac35(\delta K/\Omega_m)\,a$ なので、崩壊時刻に線形外挿した値は
+   $R_{\rm ta}$ is found by solving $2t_{\rm ta}(R_{\rm ta}) = t(a_c)$ with Brent's method. For $\Omega_\Lambda>0$, $R_{\rm ta}^3<\Omega_m/2\Omega_\Lambda$.
+2. The initial linear density contrast is $\delta = \frac35(\delta K/\Omega_m)\,a$. Linearly extrapolated to the collapse time, it gives
    $$
    \delta_c = \frac35\,\frac{\delta K}{\Omega_m}\,D_1(a_c)
    $$
-3. ビリアル化の時刻は崩壊時刻とする。ビリアル半径 $R_{\rm vir}=yR_{\rm ta}$ は、エネルギー保存とビリアル定理（$U_\Lambda\propto -R^2$ も含めて $2K=-U_G+2U_\Lambda$）から
+3. The virialization time is taken to be the collapse time. The virial radius $R_{\rm vir}=yR_{\rm ta}$ follows from energy conservation and the virial theorem, including the $\Lambda$ potential $U_\Lambda\propto -R^2$ (so $2K=-U_G+2U_\Lambda$):
    $$
    4\eta y^3 - 2(1+\eta)y + 1 = 0,\qquad \eta = \frac{\Omega_\Lambda R_{\rm ta}^3}{\Omega_m}
    $$
-   宇宙の平均物質密度に対する比は $\Delta_{\rm vir} = (a_c/R_{\rm vir})^3$。臨界密度に対する比が欲しいときは $\Delta_{\rm vir}\,\Omega_m(z)$。
+   The ratio to the mean matter density of the universe is $\Delta_{\rm vir} = (a_c/R_{\rm vir})^3$. For the ratio to the critical density, use $\Delta_{\rm vir}\,\Omega_m(z)$.
 
-EdS では $\delta_c = \frac35(3\pi/2)^{2/3} = 1.68647$、$\Delta_{\rm vir} = 18\pi^2 = 177.65$ に一致する。
+For Einstein–de Sitter, these reduce to $\delta_c = \frac35(3\pi/2)^{2/3} = 1.68647$ and $\Delta_{\rm vir} = 18\pi^2 = 177.65$.
 
-## テスト（`test_flrw_kit.c`）
+## Tests (`test_flrw_kit.c`)
 
-- EdS・開いた $\Lambda=0$（Mattig の式、$t_0$）・平坦 ΛCDM（$t(a)$）の解析解: 相対誤差 $\lesssim10^{-12}$
-- 成長因子: 成長方程式を RK4 で直接積分した結果と比較
-- $\delta_c$: 背景とシェルの運動方程式を直接積分し、二分法で崩壊時刻を合わせた結果と比較（曲率あり・なし、$\Omega_m>1$ も含む）
-- $\Delta_{\rm vir}$: Bryan & Norman (1998) のフィット（精度 ~1%）と比較
-- 逆関数の往復、$z$ 版と $t,\tau$ 版の整合性、定義域外で NaN
+- Analytic solutions for Einstein–de Sitter, open $\Lambda=0$ (Mattig's formula, $t_0$) and flat ΛCDM ($t(a)$): relative error $\lesssim10^{-12}$.
+- Growth factor: compared with a direct RK4 integration of the growth equation.
+- $\delta_c$: compared with a direct integration of the background and shell equations of motion, with the initial amplitude bisected to match the collapse time. The cases include open, closed and flat models and $\Omega_m>1$.
+- $\Delta_{\rm vir}$: compared with the Bryan & Norman (1998) fit, which is accurate to about 1%.
+- Round trips through the inverse functions, consistency between the $z$, $t$ and $\tau$ versions, and NaN outside the domain.
 
-## 計算コスト
+## Cost
 
-1 回の呼び出しで数値積分を行う（キャッシュはしない）。目安は時刻・距離・成長因子が数 µs、$t,\tau$ からの逆変換が数十 µs、$\delta_c$・$\Delta_{\rm vir}$ が数百 µs。大量に呼ぶ場合は利用側で表を作って補間するとよい。
+Each call performs numerical integration, and nothing is cached. Typical times are a few µs for time, distances and the growth factor, a few tens of µs for the inverse maps from $t$ and $\tau$, and a few hundred µs for $\delta_c$ and $\Delta_{\rm vir}$. If you need many evaluations, build a table on your side and interpolate.
