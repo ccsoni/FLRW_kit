@@ -115,20 +115,27 @@ In units where the Lagrangian radius is 1 ($`GM=\Omega_m/2`$), the shell radius 
 
 For the background ($`R=a`$), $`K=\Omega_k`$. The perturbation is therefore described by the "curvature" difference $`\delta K = \Omega_k - K`$.
 
-1. For a pure growing mode (the shell's Big Bang time equals the background's), the collapse time is twice the turnaround time:
-   ```math
-   t_{\mathrm{ta}}(R_{\mathrm{ta}}) = \int_0^{\pi/2}\frac{2R_{\mathrm{ta}}^{3/2}\sin^2\theta\,d\theta}{\sqrt{\Omega_m - \Omega_\Lambda R_{\mathrm{ta}}^3\sin^2\theta(1+\sin^2\theta)}}
-   ```
-   $`R_{\mathrm{ta}}`$ is found by solving $`2t_{\mathrm{ta}}(R_{\mathrm{ta}}) = t(a_c)`$ with Brent's method. For $`\Omega_\Lambda>0`$, $`R_{\mathrm{ta}}^3<\Omega_m/2\Omega_\Lambda`$.
-2. The initial linear density contrast is $`\delta = \frac35(\delta K/\Omega_m)\,a`$. Linearly extrapolated to the collapse time, it gives
-   ```math
-   \delta_c = \frac35\,\frac{\delta K}{\Omega_m}\,D_1(a_c)
-   ```
-3. The virialization time is taken to be the collapse time. The virial radius $`R_{\mathrm{vir}}=yR_{\mathrm{ta}}`$ follows from energy conservation and the virial theorem, including the $`\Lambda`$ potential $`U_\Lambda\propto -R^2`$ (so $`2K=-U_G+2U_\Lambda`$):
-   ```math
-   4\eta y^3 - 2(1+\eta)y + 1 = 0,\qquad \eta = \frac{\Omega_\Lambda R_{\mathrm{ta}}^3}{\Omega_m}
-   ```
-   The ratio to the mean matter density of the universe is $`\Delta_{\mathrm{vir}} = (a_c/R_{\mathrm{vir}})^3`$. For the ratio to the critical density, use $`\Delta_{\mathrm{vir}}\,\Omega_m(z)`$.
+**1.** For a pure growing mode (the shell's Big Bang time equals the background's), the collapse time is twice the turnaround time:
+
+```math
+t_{\mathrm{ta}}(R_{\mathrm{ta}}) = \int_0^{\pi/2}\frac{2R_{\mathrm{ta}}^{3/2}\sin^2\theta\,d\theta}{\sqrt{\Omega_m - \Omega_\Lambda R_{\mathrm{ta}}^3\sin^2\theta(1+\sin^2\theta)}}
+```
+
+$`R_{\mathrm{ta}}`$ is found by solving $`2t_{\mathrm{ta}}(R_{\mathrm{ta}}) = t(a_c)`$ with Brent's method. For $`\Omega_\Lambda>0`$, $`R_{\mathrm{ta}}^3<\Omega_m/2\Omega_\Lambda`$.
+
+**2.** The initial linear density contrast is $`\delta = \frac35(\delta K/\Omega_m)\,a`$. Linearly extrapolated to the collapse time, it gives
+
+```math
+\delta_c = \frac35\,\frac{\delta K}{\Omega_m}\,D_1(a_c)
+```
+
+**3.** The virialization time is taken to be the collapse time. The virial radius $`R_{\mathrm{vir}}=yR_{\mathrm{ta}}`$ follows from energy conservation and the virial theorem, including the $`\Lambda`$ potential $`U_\Lambda\propto -R^2`$ (so $`2K=-U_G+2U_\Lambda`$):
+
+```math
+4\eta y^3 - 2(1+\eta)y + 1 = 0,\qquad \eta = \frac{\Omega_\Lambda R_{\mathrm{ta}}^3}{\Omega_m}
+```
+
+The ratio to the mean matter density of the universe is $`\Delta_{\mathrm{vir}} = (a_c/R_{\mathrm{vir}})^3`$. For the ratio to the critical density, use $`\Delta_{\mathrm{vir}}\,\Omega_m(z)`$.
 
 For Einstein–de Sitter, these reduce to $`\delta_c = \frac35(3\pi/2)^{2/3} = 1.68647`$ and $`\Delta_{\mathrm{vir}} = 18\pi^2 = 177.65`$.
 

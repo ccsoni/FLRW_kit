@@ -116,20 +116,27 @@ Lagrange 半径を 1 とする単位（$`GM=\Omega_m/2`$）でシェル半径 $`
 
 背景（$`R=a`$）では $`K=\Omega_k`$ なので、揺らぎは「曲率」の差 $`\delta K = \Omega_k - K`$ で表される。
 
-1. 成長モードのみ（ビッグバン時刻が背景と同じ）なら、崩壊時刻はターンアラウンド時刻の 2 倍。
-   ```math
-   t_{\mathrm{ta}}(R_{\mathrm{ta}}) = \int_0^{\pi/2}\frac{2R_{\mathrm{ta}}^{3/2}\sin^2\theta\,d\theta}{\sqrt{\Omega_m - \Omega_\Lambda R_{\mathrm{ta}}^3\sin^2\theta(1+\sin^2\theta)}}
-   ```
-   $`2t_{\mathrm{ta}}(R_{\mathrm{ta}}) = t(a_c)`$ を Brent 法で解いて $`R_{\mathrm{ta}}`$ を求める（$`\Omega_\Lambda>0`$ では $`R_{\mathrm{ta}}^3<\Omega_m/2\Omega_\Lambda`$）。
-2. 初期の線形揺らぎは $`\delta = \frac35(\delta K/\Omega_m)\,a`$ なので、崩壊時刻に線形外挿した値は
-   ```math
-   \delta_c = \frac35\,\frac{\delta K}{\Omega_m}\,D_1(a_c)
-   ```
-3. ビリアル化の時刻は崩壊時刻とする。ビリアル半径 $`R_{\mathrm{vir}}=yR_{\mathrm{ta}}`$ は、エネルギー保存とビリアル定理（$`U_\Lambda\propto -R^2`$ も含めて $`2K=-U_G+2U_\Lambda`$）から
-   ```math
-   4\eta y^3 - 2(1+\eta)y + 1 = 0,\qquad \eta = \frac{\Omega_\Lambda R_{\mathrm{ta}}^3}{\Omega_m}
-   ```
-   宇宙の平均物質密度に対する比は $`\Delta_{\mathrm{vir}} = (a_c/R_{\mathrm{vir}})^3`$。臨界密度に対する比が欲しいときは $`\Delta_{\mathrm{vir}}\,\Omega_m(z)`$。
+**1.** 成長モードのみ（ビッグバン時刻が背景と同じ）なら、崩壊時刻はターンアラウンド時刻の 2 倍。
+
+```math
+t_{\mathrm{ta}}(R_{\mathrm{ta}}) = \int_0^{\pi/2}\frac{2R_{\mathrm{ta}}^{3/2}\sin^2\theta\,d\theta}{\sqrt{\Omega_m - \Omega_\Lambda R_{\mathrm{ta}}^3\sin^2\theta(1+\sin^2\theta)}}
+```
+
+$`2t_{\mathrm{ta}}(R_{\mathrm{ta}}) = t(a_c)`$ を Brent 法で解いて $`R_{\mathrm{ta}}`$ を求める（$`\Omega_\Lambda>0`$ では $`R_{\mathrm{ta}}^3<\Omega_m/2\Omega_\Lambda`$）。
+
+**2.** 初期の線形揺らぎは $`\delta = \frac35(\delta K/\Omega_m)\,a`$ なので、崩壊時刻に線形外挿した値は
+
+```math
+\delta_c = \frac35\,\frac{\delta K}{\Omega_m}\,D_1(a_c)
+```
+
+**3.** ビリアル化の時刻は崩壊時刻とする。ビリアル半径 $`R_{\mathrm{vir}}=yR_{\mathrm{ta}}`$ は、エネルギー保存とビリアル定理（$`U_\Lambda\propto -R^2`$ も含めて $`2K=-U_G+2U_\Lambda`$）から
+
+```math
+4\eta y^3 - 2(1+\eta)y + 1 = 0,\qquad \eta = \frac{\Omega_\Lambda R_{\mathrm{ta}}^3}{\Omega_m}
+```
+
+宇宙の平均物質密度に対する比は $`\Delta_{\mathrm{vir}} = (a_c/R_{\mathrm{vir}})^3`$。臨界密度に対する比が欲しいときは $`\Delta_{\mathrm{vir}}\,\Omega_m(z)`$。
 
 EdS では $`\delta_c = \frac35(3\pi/2)^{2/3} = 1.68647`$、$`\Delta_{\mathrm{vir}} = 18\pi^2 = 177.65`$ に一致する。
 
