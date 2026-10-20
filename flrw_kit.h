@@ -11,8 +11,10 @@
  *
  * Units
  *   Time t and conformal time tau are in units of 1/H0, distances in units of c/H0
- *   (c = 1, so tau and comoving distance share the same unit). t and tau are measured from the
- *   Big Bang (a = 0); today (z = 0) corresponds to t = t0, tau = tau0.
+ *   Light travels a comoving distance c dtau in conformal time dtau, so in these units the
+ *   comoving distance to a source that emitted at tau is numerically DC = tau0 - tau.
+ *   t and tau are measured from the Big Bang (a = 0); today (z = 0) corresponds to t = t0,
+ *   tau = tau0.
  *
  * Conventions
  *   - DC is the line-of-sight comoving distance int dz/E(z). The angular diameter and luminosity

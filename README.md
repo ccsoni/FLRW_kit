@@ -37,7 +37,7 @@ E(a)^2 \equiv \left(\frac{H}{H_0}\right)^2 = \Omega_m a^{-3} + \Omega_k a^{-2} +
 
 ## Units and conventions
 
-- Time $`t`$ and conformal time $`\tau`$ are in units of $`1/H_0`$, and distances in units of $`c/H_0`$. Since $`c=1`$, $`\tau`$ and comoving distance share the same unit. $`t`$ and $`\tau`$ are measured from the Big Bang ($`a=0`$).
+- Time $`t`$ and conformal time $`\tau`$ are in units of $`1/H_0`$, and distances in units of $`c/H_0`$. Light travels a comoving distance $`c\,d\tau`$ in conformal time $`d\tau`$, so in these units the comoving distance to a source that emitted at $`\tau`$ is numerically $`D_C = \tau_0 - \tau`$. $`t`$ and $`\tau`$ are measured from the Big Bang ($`a=0`$).
 - $`h`$ does not appear in the normalized quantities. To convert to physical units, use `FLRW_hubble_time_Gyr()` ($`1/H_0`$ in Gyr) and `FLRW_hubble_distance_Mpc()` ($`c/H_0`$ in Mpc).
 - The comoving distance is the line-of-sight distance $`D_C = \int_0^z dz'/E(z')`$. The angular diameter and luminosity distances use the transverse comoving distance $`D_M`$: $`D_A = D_M/(1+z)`$ and $`D_L = (1+z)D_M`$.
   - $`D_M = \sinh(\sqrt{\Omega_k}D_C)/\sqrt{\Omega_k}`$ for $`\Omega_k>0`$, and $`\sin(\sqrt{-\Omega_k}D_C)/\sqrt{-\Omega_k}`$ for $`\Omega_k<0`$.
