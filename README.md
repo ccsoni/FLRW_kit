@@ -38,7 +38,8 @@ E(a)^2 \equiv \left(\frac{H}{H_0}\right)^2 = \Omega_m a^{-3} + \Omega_k a^{-2} +
 ## Units and conventions
 
 - Time $`t`$ and conformal time $`\tau`$ are in units of $`1/H_0`$, and distances in units of $`c/H_0`$. Light travels a comoving distance $`c\,d\tau`$ in conformal time $`d\tau`$, so in these units the comoving distance to a source that emitted at $`\tau`$ is numerically $`D_C = \tau_0 - \tau`$. $`t`$ and $`\tau`$ are measured from the Big Bang ($`a=0`$).
-- $`h`$ does not appear in the normalized quantities. To convert to physical units, use `FLRW_hubble_time_Gyr()` ($`1/H_0`$ in Gyr) and `FLRW_hubble_distance_Mpc()` ($`c/H_0`$ in Mpc).
+- The value of `hubble` ($`h`$) does not change any result returned by the functions above. Because times and distances are measured in units of $`1/H_0`$ and $`c/H_0`$, and $`E(z)=H(z)/H_0`$ depends only on the density parameters, the returned numbers depend only on $`\Omega_m`$ and $`\Omega_\Lambda`$.
+- $`h`$ is needed only to convert the results to physical units. Multiply a time by `FLRW_hubble_time_Gyr()` ($`1/H_0 = 9.778\,h^{-1}`$ Gyr) to get Gyr, and a distance by `FLRW_hubble_distance_Mpc()` ($`c/H_0 = 2997.9\,h^{-1}`$ Mpc) to get Mpc. For distances in $`h^{-1}`$ Mpc, multiply by 2997.92458 instead.
 - The comoving distance is the line-of-sight distance $`D_C = \int_0^z dz'/E(z')`$. The angular diameter and luminosity distances use the transverse comoving distance $`D_M`$: $`D_A = D_M/(1+z)`$ and $`D_L = (1+z)D_M`$.
   - $`D_M = \sinh(\sqrt{\Omega_k}D_C)/\sqrt{\Omega_k}`$ for $`\Omega_k>0`$, and $`\sin(\sqrt{-\Omega_k}D_C)/\sqrt{-\Omega_k}`$ for $`\Omega_k<0`$.
 - The `_t` and `_tau` distance functions give the distance today to a source that emitted light at time $`t`$ (conformal time $`\tau`$). In particular, $`D_C = \tau_0 - \tau`$.
