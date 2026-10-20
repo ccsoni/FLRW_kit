@@ -9,10 +9,11 @@ It needs only C11 and libm. The library keeps no internal state, so its function
 
 ```sh
 make            # builds libflrw_kit.a
-make test       # runs the tests
+make test       # runs the C and C++ tests (make test_c / make test_cpp for one of them)
 ```
 
 In your code, `#include "flrw_kit.h"` and link with `-L<dir> -lflrw_kit -lm`.
+From C++, either include `flrw_kit.h` directly (it is wrapped in `extern "C"`) or use the C++ wrapper `flrw_kit.hpp` described below.
 
 ## Cosmological model
 
@@ -80,6 +81,33 @@ int main(void) {
 }
 ```
 
+## C++ wrapper (`flrw_kit.hpp`)
+
+`flrw_kit.hpp` is a header-only wrapper (C++11 or later) around the C API. Build the library with the C compiler as usual, include `flrw_kit.hpp`, and link with `-lflrw_kit -lm`.
+
+```cpp
+#include <cstdio>
+#include "flrw_kit.hpp"
+
+int main() {
+  const flrw::Cosmology c(0.26, 0.049, 0.69, 0.677, 0.0014);  // cdm, b, de, h, nu (nu defaults to 0)
+  std::printf("t(z=1)  = %g Gyr\n", c.cosmic_time_z(1.0) * c.hubble_time_Gyr());
+  std::printf("dc(z=1) = %g\n", c.delta_crit_z(1.0));
+  std::vector<double> dl = c.evaluate(&flrw::Cosmology::DL_z, {0.5, 1.0, 2.0});  // in c/H0
+  return 0;
+}
+```
+
+```sh
+g++ -std=c++11 -I<dir> main.cpp -L<dir> -lflrw_kit -lm
+```
+
+- `flrw::Cosmology` takes either the five parameters or a `cosm_param`. Its member functions have the C names without the `FLRW_` prefix (`cosmic_time_z`, `DL_tau`, `growth_factor_t`, `virial_Delta_z`, ...), with the same units and conventions.
+- The constructor throws `std::invalid_argument` if $`\Omega_m \le 0`$, $`h \le 0`$ or a parameter is not finite.
+- Where the C function would return NaN, the member function throws `std::domain_error`. If you prefer NaN, call the C functions with `&c.param()`.
+- `evaluate(&flrw::Cosmology::f, xs)` applies a member function to every element of a `std::vector<double>`.
+- A `Cosmology` object is immutable, so one object can be shared between threads.
+
 ## Methods
 
 ### Time and distances
@@ -140,13 +168,18 @@ The ratio to the mean matter density of the universe is $`\Delta_{\mathrm{vir}} 
 
 For Einstein–de Sitter, these reduce to $`\delta_c = \frac35(3\pi/2)^{2/3} = 1.68647`$ and $`\Delta_{\mathrm{vir}} = 18\pi^2 = 177.65`$.
 
-## Tests (`test_flrw_kit.c`)
+## Tests
+
+`test_flrw_kit.c` checks the C library:
+
 
 - Analytic solutions for Einstein–de Sitter, open $`\Lambda=0`$ (Mattig's formula, $`t_0`$) and flat ΛCDM ($`t(a)`$): relative error $`\lesssim10^{-12}`$.
 - Growth factor: compared with a direct RK4 integration of the growth equation.
 - $`\delta_c`$: compared with a direct integration of the background and shell equations of motion, with the initial amplitude bisected to match the collapse time. The cases include open, closed and flat models and $`\Omega_m>1`$.
 - $`\Delta_{\mathrm{vir}}`$: compared with the Bryan & Norman (1998) fit, which is accurate to about 1%.
 - Round trips through the inverse functions, consistency between the $`z`$, $`t`$ and $`\tau`$ versions, and NaN outside the domain.
+
+`test_flrw_kit_cpp.cpp` checks the C++ wrapper: every member function returns exactly the value of the C function, both constructors agree, `evaluate()` works, and the expected exceptions are thrown.
 
 ## Cost
 

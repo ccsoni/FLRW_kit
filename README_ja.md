@@ -8,12 +8,12 @@ C11 + libm だけで動き、内部状態を持たないので OpenMP の並列�
 ## ビルド
 
 ```sh
-cd FLRW_kit
 make            # libflrw_kit.a
-make test       # テスト
+make test       # C と C++ のテスト（片方だけなら make test_c / make test_cpp）
 ```
 
 利用側では `#include "flrw_kit.h"` して `-L<dir> -lflrw_kit -lm` をリンクする。
+C++ からは `flrw_kit.h` をそのまま include してもよい（`extern "C"` で囲んである）し、後述の C++ ラッパー `flrw_kit.hpp` を使ってもよい。
 
 ## 宇宙モデル
 
@@ -81,6 +81,33 @@ int main(void) {
 }
 ```
 
+## C++ ラッパー（`flrw_kit.hpp`）
+
+`flrw_kit.hpp` は C の API を包むヘッダだけの C++ ラッパー（C++11 以降）。ライブラリはこれまでどおり C コンパイラでビルドし、`flrw_kit.hpp` を include して `-lflrw_kit -lm` をリンクする。
+
+```cpp
+#include <cstdio>
+#include "flrw_kit.hpp"
+
+int main() {
+  const flrw::Cosmology c(0.26, 0.049, 0.69, 0.677, 0.0014);  // cdm, b, de, h, nu（nu は省略すると 0）
+  std::printf("t(z=1)  = %g Gyr\n", c.cosmic_time_z(1.0) * c.hubble_time_Gyr());
+  std::printf("dc(z=1) = %g\n", c.delta_crit_z(1.0));
+  std::vector<double> dl = c.evaluate(&flrw::Cosmology::DL_z, {0.5, 1.0, 2.0});  // c/H0 単位
+  return 0;
+}
+```
+
+```sh
+g++ -std=c++11 -I<dir> main.cpp -L<dir> -lflrw_kit -lm
+```
+
+- `flrw::Cosmology` は 5 つのパラメータか `cosm_param` から作る。メンバ関数名は C の関数名から `FLRW_` を除いたもの（`cosmic_time_z`, `DL_tau`, `growth_factor_t`, `virial_Delta_z` など）で、単位と規約も同じ。
+- $`\Omega_m \le 0`$、$`h \le 0`$、または有限でないパラメータを与えると、コンストラクタが `std::invalid_argument` を投げる。
+- C の関数が NaN を返す場合、メンバ関数は `std::domain_error` を投げる。NaN のほうがよければ `&c.param()` を渡して C の関数を呼ぶ。
+- `evaluate(&flrw::Cosmology::f, xs)` は `std::vector<double>` の各要素にメンバ関数を適用する。
+- `Cosmology` オブジェクトは変更できないので、1 つのオブジェクトを複数のスレッドで共有してよい。
+
 ## 計算方法
 
 ### 時刻・距離
@@ -141,13 +168,18 @@ $`2t_{\mathrm{ta}}(R_{\mathrm{ta}}) = t(a_c)`$ を Brent 法で解いて $`R_{\m
 
 EdS では $`\delta_c = \frac35(3\pi/2)^{2/3} = 1.68647`$、$`\Delta_{\mathrm{vir}} = 18\pi^2 = 177.65`$ に一致する。
 
-## テスト（`test_flrw_kit.c`）
+## テスト
+
+`test_flrw_kit.c` は C のライブラリを確かめる。
+
 
 - EdS・開いた $`\Lambda=0`$（Mattig の式、$`t_0`$）・平坦 ΛCDM（$`t(a)`$）の解析解: 相対誤差 $`\lesssim10^{-12}`$
 - 成長因子: 成長方程式を RK4 で直接積分した結果と比較
 - $`\delta_c`$: 背景とシェルの運動方程式を直接積分し、二分法で崩壊時刻を合わせた結果と比較（曲率あり・なし、$`\Omega_m>1`$ も含む）
 - $`\Delta_{\mathrm{vir}}`$: Bryan & Norman (1998) のフィット（精度 ~1%）と比較
 - 逆関数の往復、$`z`$ 版と $`t,\tau`$ 版の整合性、定義域外で NaN
+
+`test_flrw_kit_cpp.cpp` は C++ ラッパーを確かめる。すべてのメンバ関数が C の関数とまったく同じ値を返すこと、2 つのコンストラクタが同じ結果になること、`evaluate()` の動作、想定どおりに例外が投げられることを調べる。
 
 ## 計算コスト
 
