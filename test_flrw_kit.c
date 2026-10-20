@@ -1,9 +1,9 @@
-/* FLRW_kit のテスト
- *   - EdS, 開いた Λ=0, 平坦 ΛCDM の解析解との比較
- *   - 線形成長因子: 成長方程式の直接積分 (RK4) との比較
- *   - δc: 背景とシェルの運動方程式を直接積分した球対称崩壊との比較
- *   - Δvir: Bryan & Norman (1998) のフィット (~1%) との比較
- *   - 逆関数 (z -> t -> z, z -> tau -> z) の往復
+/* Tests for FLRW_kit
+ *   - analytic solutions for EdS, open Lambda = 0 and flat LCDM
+ *   - linear growth factor vs direct RK4 integration of the growth equation
+ *   - delta_c vs spherical collapse from direct integration of the background and shell equations
+ *   - Delta_vir vs the Bryan & Norman (1998) fit (~1%)
+ *   - round trips through the inverse functions (z -> t -> z, z -> tau -> z)
  */
 #include <math.h>
 #include <stdio.h>
@@ -22,7 +22,7 @@ static void check(const char* name, double got, double ref, double rtol) {
   printf("%-4s %-44s got=% .12e ref=% .12e rel=%.1e\n", ok ? "ok" : "FAIL", name, got, ref, rel);
 }
 
-/* ---- 成長方程式 D'' + (2 + dlnE/dlna) D' = (3/2) Ωm(a) D を ln a で RK4 積分 ---- */
+/* ---- RK4 integration in ln a of D'' + (2 + dlnE/dlna) D' = (3/2) Om(a) D ---- */
 typedef struct {
   double om, ok, ol;
 } Model;
@@ -51,12 +51,14 @@ static double growth_ode(const Model* m, double a_end) {
     grow_rhs(m, x + h, t, k4);
     for (int j = 0; j < 2; ++j) y[j] += h / 6.0 * (k1[j] + 2.0 * k2[j] + 2.0 * k3[j] + k4[j]);
   }
-  return y[0]; /* a -> 0 で D -> a */
+  return y[0]; /* D -> a as a -> 0 */
 }
 
-/* ---- 背景 a(t) とシェル R(t) を同時に積分し, シェルが崩壊したときの a を返す ----
- *   a'' = -Ωm/(2a^2) + ΩΛ a,   R'' = -Ωm/(2R^2) + ΩΛ R   (GM = Ωm/2, Lagrange 半径 1)
- *   初期条件は物質優勢期の成長モード: R = a (1 - δ/3), R' = R H (1 - δ/(3(1+δ))) */
+/* ---- integrate the background a(t) and the shell R(t) together;
+ *      return a when the shell collapses ----
+ *   a'' = -Om/(2a^2) + OL a,   R'' = -Om/(2R^2) + OL R   (GM = Om/2, Lagrangian radius 1)
+ *   Initial conditions: growing mode in the matter era,
+ *     R = a (1 - delta/3), R' = R H (1 - delta/(3(1+delta))) */
 static void sc_rhs(const Model* m, const double y[4], double dy[4]) {
   dy[0] = y[1];
   dy[1] = -0.5 * m->om / (y[0] * y[0]) + m->ol * y[0];
@@ -85,17 +87,18 @@ static double collapse_a(const Model* m, double a_i, double delta_i) {
   return y[0];
 }
 
-/* a_c で崩壊する初期揺らぎを二分法で求め, 線形外挿した δc を返す */
+/* find by bisection the initial perturbation that collapses at a_c;
+ * return the linearly extrapolated delta_c */
 static double delta_crit_ode(const Model* m, double a_c) {
   const double a_i = 1e-7;
-  double lo = 1e-9, hi = 1e-5; /* δ_i */
+  double lo = 1e-9, hi = 1e-5; /* delta_i */
   for (int it = 0; it < 48; ++it) {
     const double mid = sqrt(lo * hi);
     if (collapse_a(m, a_i, mid) > a_c) lo = mid;
     else hi = mid;
   }
   const double di = sqrt(lo * hi);
-  /* 初期条件の 2 次の誤差 ~ δ_i ~ 1e-7 は無視できる */
+  /* the second-order error of the initial conditions, ~ delta_i ~ 1e-7, is negligible */
   return di / a_i * growth_ode(m, a_c);
 }
 
@@ -130,12 +133,12 @@ int main(void) {
     check(name, FLRW_virial_Delta_z(&cp, z), 18.0 * PI * PI, 1e-10);
   }
 
-  /* ---------------- 開いた宇宙 Λ = 0 ---------------- */
+  /* ---------------- open universe, Lambda = 0 ---------------- */
   set(&cp, 0.3, 0.0);
   puts("== open, Om=0.3, OL=0");
   for (double z = 0.5; z <= 8.0; z *= 2.0) {
     const double om = 0.3;
-    /* Mattig の式 */
+    /* Mattig's formula */
     const double dl = 2.0 * (om * z + (om - 2.0) * (sqrt(1.0 + om * z) - 1.0)) / (om * om);
     snprintf(name, sizeof name, "DL(z=%g)", z);
     check(name, FLRW_DL_z(&cp, z), dl, 1e-11);
@@ -143,13 +146,13 @@ int main(void) {
     check(name, FLRW_DA_z(&cp, z), dl / ((1.0 + z) * (1.0 + z)), 1e-11);
   }
   {
-    /* t0 = [1/(1-Ωm) - Ωm/(2(1-Ωm)^{3/2}) acosh(2/Ωm - 1)] */
+    /* t0 = [1/(1-Om) - Om/(2(1-Om)^{3/2}) acosh(2/Om - 1)] */
     const double om = 0.3, w = 1.0 - om;
     check("t0", FLRW_cosmic_time_z(&cp, 0.0),
           1.0 / w - om / (2.0 * pow(w, 1.5)) * acosh(2.0 / om - 1.0), 1e-12);
   }
 
-  /* ---------------- 平坦 ΛCDM ---------------- */
+  /* ---------------- flat LCDM ---------------- */
   set(&cp, 0.3, 0.7);
   puts("== flat LCDM, Om=0.3, OL=0.7");
   for (double z = 0.0; z <= 9.0; z += 3.0) {
@@ -159,7 +162,7 @@ int main(void) {
     check(name, FLRW_cosmic_time_z(&cp, z), t, 1e-12);
   }
 
-  /* ---------------- 成長因子と δc を ODE と比較 ---------------- */
+  /* ---------------- growth factor and delta_c vs ODE ---------------- */
   const double models[][2] = {{0.3, 0.7}, {0.3, 0.0}, {0.3, 0.5}, {0.25, 0.9}, {2.0, 0.0}};
   for (size_t k = 0; k < sizeof models / sizeof models[0]; ++k) {
     const Model m = {models[k][0], 1.0 - models[k][0] - models[k][1], models[k][1]};
@@ -175,7 +178,7 @@ int main(void) {
     }
   }
 
-  /* ---------------- Δvir: Bryan & Norman (1998) ---------------- */
+  /* ---------------- Delta_vir: Bryan & Norman (1998) ---------------- */
   set(&cp, 0.3, 0.7);
   puts("== Delta_vir vs Bryan & Norman (flat, ~1%)");
   for (double z = 0.0; z <= 3.0; z += 1.0) {
@@ -193,7 +196,7 @@ int main(void) {
           1.5e-2);
   }
 
-  /* ---------------- 逆関数と t, tau 版の整合性 ---------------- */
+  /* ---------------- inverse functions and consistency of the t, tau versions ---------------- */
   const double models2[][2] = {{0.3, 0.7}, {0.3, 0.0}, {0.3, 0.5}, {1.5, 0.2}};
   for (size_t k = 0; k < sizeof models2 / sizeof models2[0]; ++k) {
     set(&cp, models2[k][0], models2[k][1]);
@@ -219,7 +222,7 @@ int main(void) {
     }
   }
 
-  /* ---------------- 定義域外 ---------------- */
+  /* ---------------- outside the domain ---------------- */
   set(&cp, 0.3, 0.7);
   puts("== domain errors (expect NaN)");
   {

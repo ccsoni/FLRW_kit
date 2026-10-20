@@ -1,29 +1,33 @@
-/* FLRW_kit: 実装
+/* FLRW_kit: implementation
  *
- * 積分はすべて u = sqrt(a) で変数変換して a -> 0 の特異性を除いてから
- * 適応型 Gauss-Kronrod (7-15 点) で行う. E(a)^2 a^3 = Ωm + Ωk a + ΩΛ a^3 として
+ * All integrals are evaluated after the substitution u = sqrt(a), which removes the singular
+ * behavior at a -> 0, by adaptive Gauss-Kronrod (7-15 points).
+ * With E(a)^2 a^3 = Om + Ok a + OL a^3,
  *
- *   t(a)   = ∫_0^a da/(a E)   = ∫_0^√a 2u^2 du / sqrt(Ωm + Ωk u^2 + ΩΛ u^6)
- *   tau(a) = ∫_0^a da/(a^2 E) = ∫_0^√a 2    du / sqrt(Ωm + Ωk u^2 + ΩΛ u^6)
- *   DC(a)  = ∫_a^1 da/(a^2 E) = ∫_√a^1  (tau と同じ被積分関数)
- *   D1(a)  = (5Ωm/2) E(a) ∫_0^a da/(a E)^3
- *          = (5Ωm/2) E(a) ∫_0^√a 2u^4 du / (Ωm + Ωk u^2 + ΩΛ u^6)^{3/2}
- *            (Heath 1977. 物質 + 宇宙定数 + 曲率で厳密. a -> 0 で D1 -> a)
+ *   t(a)   = int_0^a da/(a E)   = int_0^sqrt(a) 2u^2 du / sqrt(Om + Ok u^2 + OL u^6)
+ *   tau(a) = int_0^a da/(a^2 E) = int_0^sqrt(a) 2    du / sqrt(Om + Ok u^2 + OL u^6)
+ *   DC(a)  = int_a^1 da/(a^2 E) = int_sqrt(a)^1  (same integrand as tau)
+ *   D1(a)  = (5 Om/2) E(a) int_0^a da/(a E)^3
+ *          = (5 Om/2) E(a) int_0^sqrt(a) 2u^4 du / (Om + Ok u^2 + OL u^6)^{3/2}
+ *            (Heath 1977; exact for matter + cosmological constant + curvature; D1 -> a as a -> 0)
  *
- * 球対称崩壊 (質量 M のシェル, 半径 R. Lagrange 半径 r_L = 1 になるよう質量を規格化し,
- * GM = Ωm/2 [H0 = 1, a(t0) = 1]):
- *   d^2R/dt^2 = -Ωm/(2R^2) + ΩΛ R
- *   エネルギー: (dR/dt)^2 = Ωm/R + ΩΛ R^2 + K,  K = -Ωm/R_ta - ΩΛ R_ta^2
- *   背景 (R = a) では K = Ωk なので, 摂動は「曲率」の差 δK = Ωk - K で表される.
- *   成長モードのみ (ビッグバン時刻が背景と同じ) なら崩壊時刻 = 2 × ターンアラウンド時刻:
- *     t_ta(R_ta) = ∫_0^R_ta dR / sqrt(Ωm (1/R - 1/R_ta) + ΩΛ (R^2 - R_ta^2))
- *                = ∫_0^{π/2} 2 R_ta^{3/2} s^2 dθ / sqrt(Ωm - ΩΛ R_ta^3 s^2 (1+s^2)),  s = sinθ
- *   初期の線形密度揺らぎは δ = (3/5)(δK/Ωm) a なので, 崩壊時に線形外挿した値は
- *     δc = (3/5) (δK/Ωm) D1(a_c)
- *   ビリアル半径 R_vir = y R_ta はエネルギー保存とビリアル定理
- *   (U_G ∝ -1/R, U_Λ ∝ -R^2 なので 2K = -U_G + 2U_Λ) から
- *     4η y^3 - 2(1+η) y + 1 = 0,   η = ΩΛ R_ta^3 / Ωm
- *   ビリアル半径内の平均密度 / 宇宙の平均物質密度 = (a_c / R_vir)^3.
+ * Spherical collapse (shell of mass M and radius R; the mass is normalized so that the Lagrangian
+ * radius is r_L = 1, i.e. GM = Om/2 [H0 = 1, a(t0) = 1]):
+ *   d^2R/dt^2 = -Om/(2R^2) + OL R
+ *   energy: (dR/dt)^2 = Om/R + OL R^2 + K,  K = -Om/R_ta - OL R_ta^2
+ *   For the background (R = a), K = Ok, so the perturbation is described by the "curvature"
+ *   difference dK = Ok - K.
+ *   For a pure growing mode (same Big Bang time as the background), t_collapse = 2 t_turnaround:
+ *     t_ta(R_ta) = int_0^R_ta dR / sqrt(Om (1/R - 1/R_ta) + OL (R^2 - R_ta^2))
+ *                = int_0^{pi/2} 2 R_ta^{3/2} s^2 dtheta / sqrt(Om - OL R_ta^3 s^2 (1+s^2)),
+ *                  s = sin(theta)
+ *   The initial linear density contrast is delta = (3/5)(dK/Om) a, so linearly extrapolated
+ *   to collapse,
+ *     delta_c = (3/5) (dK/Om) D1(a_c)
+ *   The virial radius R_vir = y R_ta follows from energy conservation and the virial theorem
+ *   (U_G ~ -1/R and U_L ~ -R^2, hence 2K = -U_G + 2U_L):
+ *     4 eta y^3 - 2(1+eta) y + 1 = 0,   eta = OL R_ta^3 / Om
+ *   Mean density within R_vir / mean matter density of the universe = (a_c / R_vir)^3.
  */
 #include "flrw_kit.h"
 
@@ -34,17 +38,17 @@
 #define INT_MAXSEG 400
 #define ROOT_XTOL 1e-14
 #define ROOT_MAXIT 200
-#define A_MAX 1e12 /* 逆関数探索の a の上限 */
+#define A_MAX 1e12 /* upper bound of a when inverting t(a), tau(a) */
 #define PI 3.14159265358979323846
 
 typedef struct {
-  double om, ok, ol; /* Ωm, Ωk, ΩΛ */
+  double om, ok, ol; /* Om, Ok, OL */
 } Bg;
 
 typedef double (*IntFn)(double x, const void* par);
 
 /* ------------------------------------------------------------------ */
-/* 適応型 Gauss-Kronrod 7-15 点積分                                     */
+/* Adaptive Gauss-Kronrod 7-15 point quadrature                       */
 /* ------------------------------------------------------------------ */
 static const double xgk[8] = {
     0.991455371120812639206854697526329, 0.949107912342758524526189684047851,
@@ -74,8 +78,9 @@ static double gk15(IntFn f, const void* par, double a, double b, double* err) {
   return rk * h;
 }
 
-/* 大域適応型: 誤差最大の区間を二分することを, 誤差の総和が許容値を下回るか
- * 丸め誤差の限界に達するまで繰り返す (QUADPACK の QAG と同じ方針) */
+/* Globally adaptive: repeatedly bisect the subinterval with the largest error until the total
+ * error falls below the tolerance or the round-off limit is reached
+ * (same strategy as QUADPACK QAG) */
 static double integrate(IntFn f, const void* par, double a, double b) {
   if (a == b) return 0.0;
   double lo[INT_MAXSEG], hi[INT_MAXSEG], val[INT_MAXSEG], err[INT_MAXSEG];
@@ -89,7 +94,7 @@ static double integrate(IntFn f, const void* par, double a, double b) {
     int k = 0;
     for (int i = 1; i < n; ++i)
       if (err[i] > err[k]) k = i;
-    if (err[k] <= 50.0 * DBL_EPSILON * fabs(val[k])) break; /* 丸め誤差の限界 */
+    if (err[k] <= 50.0 * DBL_EPSILON * fabs(val[k])) break; /* round-off limit */
     const double m = 0.5 * (lo[k] + hi[k]);
     if (!(m > fmin(lo[k], hi[k]) && m < fmax(lo[k], hi[k]))) break;
     double el, er;
@@ -101,14 +106,14 @@ static double integrate(IntFn f, const void* par, double a, double b) {
     hi[k] = m, val[k] = vl, err[k] = el;
     ++n;
   }
-  /* 和の丸め誤差の蓄積を避けるため最後に足し直す */
+  /* re-sum at the end to avoid accumulated round-off in the running sum */
   sum = 0.0;
   for (int i = 0; i < n; ++i) sum += val[i];
   return sum;
 }
 
 /* ------------------------------------------------------------------ */
-/* Brent 法 (f(lo), f(hi) は異符号であること)                            */
+/* Brent's method (f(lo) and f(hi) must have opposite signs)          */
 /* ------------------------------------------------------------------ */
 typedef double (*RootFn)(double x, const void* par);
 
@@ -163,7 +168,7 @@ static double brent(RootFn f, const void* par, double a, double b, double fa, do
 }
 
 /* ------------------------------------------------------------------ */
-/* 背景                                                                */
+/* Background                                                         */
 /* ------------------------------------------------------------------ */
 static int make_bg(const cosm_param* cp, Bg* b) {
   if (!cp) return -1;
@@ -174,7 +179,7 @@ static int make_bg(const cosm_param* cp, Bg* b) {
   return 0;
 }
 
-/* a^3 E(a)^2 = Ωm + Ωk a + ΩΛ a^3 を u = sqrt(a) で書いたもの */
+/* a^3 E(a)^2 = Om + Ok a + OL a^3 written in terms of u = sqrt(a) */
 static inline double a3E2_u(const Bg* b, double u) {
   const double u2 = u * u;
   return b->om + u2 * (b->ok + b->ol * u2 * u2);
@@ -200,7 +205,7 @@ static double time_a(const Bg* b, double a) { return integrate(f_time, b, 0.0, s
 static double conf_a(const Bg* b, double a) { return integrate(f_conf, b, 0.0, sqrt(a)); }
 static double DC_a(const Bg* b, double a) { return integrate(f_conf, b, sqrt(a), 1.0); }
 
-/* a -> 0 で D1 -> a となる規格化の成長因子 */
+/* growth factor normalized so that D1 -> a as a -> 0 */
 static double D1_a(const Bg* b, double a) {
   return 2.5 * b->om * E_a(b, a) * integrate(f_grow, b, 0.0, sqrt(a));
 }
@@ -215,7 +220,7 @@ static double DM_from_DC(const Bg* b, double dc) {
 static inline double a_of_z(double z) { return (z > -1.0) ? 1.0 / (1.0 + z) : NAN; }
 
 /* ------------------------------------------------------------------ */
-/* t(a), tau(a) の逆関数 (x = ln a で safeguarded Newton)               */
+/* Inverse of t(a), tau(a) (safeguarded Newton in x = ln a)          */
 /* ------------------------------------------------------------------ */
 typedef struct {
   const Bg* b;
@@ -239,14 +244,15 @@ static double inv_df(double x, const InvPar* ip) {
 static double invert(const Bg* b, int conformal, double target) {
   if (!(target > 0.0) || !isfinite(target)) return NAN;
   const InvPar ip = {b, conformal, target};
-  /* 物質優勢の解 t = (2/3) a^{3/2}/√Ωm, tau = 2 √a/√Ωm を初期値にする */
+  /* initial guess from the matter-dominated solution
+   * t = (2/3) a^{3/2}/sqrt(Om), tau = 2 sqrt(a)/sqrt(Om) */
   const double so = sqrt(b->om);
   double x = conformal ? 2.0 * log(0.5 * so * target) : (2.0 / 3.0) * log(1.5 * so * target);
   x = fmin(x, log(A_MAX));
   double fx = inv_f(x, &ip);
   if (!isfinite(fx)) return NAN;
 
-  /* 括弧付け */
+  /* bracket the root */
   double lo, hi, flo, fhi;
   if (fx < 0.0) {
     lo = x, flo = fx;
@@ -254,7 +260,7 @@ static double invert(const Bg* b, int conformal, double target) {
     while (fhi < 0.0) {
       lo = hi, flo = fhi;
       hi += 1.0;
-      if (hi > log(A_MAX)) return NAN; /* 共形時刻の上限 (ΩΛ > 0) 等 */
+      if (hi > log(A_MAX)) return NAN; /* e.g. beyond the maximum conformal time (OL > 0) */
       fhi = inv_f(hi, &ip);
       if (!isfinite(fhi)) return NAN;
     }
@@ -271,7 +277,7 @@ static double invert(const Bg* b, int conformal, double target) {
   if (flo == 0.0) return exp(lo);
   if (fhi == 0.0) return exp(hi);
 
-  /* Newton (括弧の外に出る・収束が遅いときは二分法) */
+  /* Newton (bisection when the step leaves the bracket) */
   x = 0.5 * (lo + hi);
   fx = inv_f(x, &ip);
   for (int it = 0; it < ROOT_MAXIT; ++it) {
@@ -290,7 +296,7 @@ static double invert(const Bg* b, int conformal, double target) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 球対称崩壊                                                          */
+/* Spherical collapse                                                 */
 /* ------------------------------------------------------------------ */
 typedef struct {
   const Bg* b;
@@ -318,19 +324,19 @@ static double coll_f(double R, const void* p) {
   return 2.0 * t_turnaround(cp->b, R) - cp->t_c;
 }
 
-/* a_c で崩壊するシェルのターンアラウンド半径 (Lagrange 半径 = 1 の単位) */
+/* turnaround radius of the shell collapsing at a_c (units with Lagrangian radius = 1) */
 static double R_turnaround(const Bg* b, double a_c) {
   if (!(a_c > 0.0)) return NAN;
   const CollPar par = {b, time_a(b, a_c)};
   if (!isfinite(par.t_c)) return NAN;
   double hi, fhi;
   if (b->ol > 0.0) {
-    /* R_ta^3 < Ωm/(2ΩΛ) でないとシェルは引き返さない */
+    /* the shell turns around only if R_ta^3 < Om/(2 OL) */
     hi = cbrt(b->om / (2.0 * b->ol)) * (1.0 - 1e-12);
     fhi = coll_f(hi, &par);
     if (!(fhi >= 0.0)) return NAN;
   } else {
-    hi = 2.0 * cbrt(2.0 / (3.0 * PI) * 2.0 / (3.0 * PI)) * a_c; /* EdS 解の 2 倍 */
+    hi = 2.0 * cbrt(2.0 / (3.0 * PI) * 2.0 / (3.0 * PI)) * a_c; /* twice the EdS solution */
     fhi = coll_f(hi, &par);
     for (int i = 0; fhi < 0.0; ++i) {
       if (i > 200 || !isfinite(fhi)) return NAN;
@@ -351,7 +357,7 @@ static double delta_crit_a(const Bg* b, double a_c) {
 static double virial_Delta_a(const Bg* b, double a_c) {
   const double R = R_turnaround(b, a_c);
   if (!isfinite(R)) return NAN;
-  /* 4η y^3 - 2(1+η) y + 1 = 0 の (0,1) の根 (η < 1/2 なら唯一) */
+  /* root of 4 eta y^3 - 2(1+eta) y + 1 = 0 in (0,1) (unique for eta < 1/2) */
   const double eta = b->ol * R * R * R / b->om;
   double lo = 0.0, hi = 1.0;
   for (int i = 0; i < 200 && hi - lo > 2.0 * DBL_EPSILON; ++i) {
@@ -365,7 +371,7 @@ static double virial_Delta_a(const Bg* b, double a_c) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 公開関数                                                            */
+/* Public functions                                                   */
 /* ------------------------------------------------------------------ */
 #define BG_OR_NAN(cp, b) \
   Bg b;                  \
@@ -401,7 +407,7 @@ double FLRW_hubble_distance_Mpc(const cosm_param* cp) {
   return (cp && cp->hubble > 0.0) ? 2997.92458 / cp->hubble : NAN;
 }
 
-/* ---- 時刻 ---- */
+/* ---- time ---- */
 double FLRW_cosmic_time_z(const cosm_param* cp, double z) {
   BG_OR_NAN(cp, b);
   return time_a(&b, a_of_z(z));
@@ -430,7 +436,7 @@ double FLRW_redshift_tau(const cosm_param* cp, double tau) {
   return 1.0 / FLRW_scale_factor_tau(cp, tau) - 1.0;
 }
 
-/* ---- 距離: a を与えたときの共通処理 ---- */
+/* ---- distances: common part for a given a ---- */
 enum { DIST_C, DIST_M, DIST_A, DIST_L };
 
 static double dist_from(const Bg* b, double a, double dc, int kind) {
@@ -474,7 +480,7 @@ double FLRW_DM_tau(const cosm_param* cp, double tau) { return dist_tau(cp, tau, 
 double FLRW_DA_tau(const cosm_param* cp, double tau) { return dist_tau(cp, tau, DIST_A); }
 double FLRW_DL_tau(const cosm_param* cp, double tau) { return dist_tau(cp, tau, DIST_L); }
 
-/* ---- a の関数を z, t, tau の関数として呼ぶ ---- */
+/* ---- functions of a called as functions of z, t, tau ---- */
 typedef double (*AFn)(const Bg* b, double a);
 
 static double growth_a(const Bg* b, double a) { return D1_a(b, a) / D1_a(b, 1.0); }
