@@ -8,8 +8,12 @@ LDLIBS   += -lm
 libflrw_kit.a: flrw_kit.o
 	$(AR) rcs $@ $^
 
-flrw_kit.o: flrw_kit.c flrw_kit.h
+flrw_kit.o: flrw_kit.c flrw_kit.h flrw_nu_table.h
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# regenerate the neutrino table (requires python3 with numpy; the generated file is committed)
+table:
+	python3 tools/gen_nu_table.py > flrw_nu_table.h
 
 test_flrw_kit: test_flrw_kit.c libflrw_kit.a
 	$(CC) $(CFLAGS) -o $@ $< -L. -lflrw_kit $(LDLIBS)
@@ -28,4 +32,4 @@ test_cpp: test_flrw_kit_cpp
 clean:
 	rm -f flrw_kit.o libflrw_kit.a test_flrw_kit test_flrw_kit_cpp
 
-.PHONY: test test_c test_cpp clean
+.PHONY: test test_c test_cpp clean table
